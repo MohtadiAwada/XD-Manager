@@ -54,5 +54,21 @@
             "secondary-hover-color": "#4A4A65",
             "secondary-text-color": "#C0C0DC"
         }
+    },
+    "config-panel": {
+        "fg-color": "#1A1A2E",
+        "open-fg-color": "transparent",
+        "open-hover-color": "#35354A",
+        "open-inner-color": "#9D9DB8",
+        "title-fg-color": "#2E2E45",
+        "title-text-color": "#C8A8F0",
+        "label-text-color": "#A0A0C0",
+        "input-fg-color": "#2C2C42",
+        "input-border-color": "#4A4A6A",
+        "input-button-color": "#3D3D58",
+        "input-text-color": "#D0D0E8",
+        "button-fg-color": "#6B4FA0",
+        "button-hover-color": "#7D5FB5",
+        "button-text-color": "#FFFFFF"
     }
 }

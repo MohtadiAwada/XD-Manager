@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import json
 import os, sys
+import subprocess
 
 def resource_path(rel_path):
     if hasattr(sys, '_MEIPASS'):
@@ -23,23 +24,25 @@ class App(ctk.CTk):
         self.geometry("950x500")
         self.resizable(False, False)
 
-        self.header = ctk.CTkFrame(self, height=20, corner_radius=0)
+        self.header = ctk.CTkFrame(self, height=24, corner_radius=0)
         self.header.pack(side="top", fill="x")
         self.header.pack_propagate(False)
+        self.config_btn = ctk.CTkButton(self.header, corner_radius=0, width=24, text="☰", command=self.toggle_config_panel)
+        self.config_btn.pack(side="left", pady=0, padx=0)
         self.title = ctk.CTkLabel(self.header, text="External-Disks-Manager")
         self.title.pack(pady=0, padx=0)
-
+        
         self.body = ctk.CTkFrame(self, corner_radius=0)
         self.body.pack(side="top", fill="both", expand=True)
 
         self.toolbar = ctk.CTkFrame(self.body, corner_radius=0, width=24)
         self.toolbar.pack(side="left", fill="both", expand=False)
         self.toolbar.pack_propagate(False)
-        self.tb_edt_rfrsh = ctk.CTkButton(self.toolbar, corner_radius=0, text="R", height=24, command=self.refresh)
+        self.tb_edt_rfrsh = ctk.CTkButton(self.toolbar, corner_radius=0, text="↻", height=24, command=self.refresh)
         self.tb_edt_rfrsh.pack(side="top", fill="x")
-        self.tb_dlt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="D", height=24, command=self.delete)
+        self.tb_dlt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✕", height=24, command=self.delete)
         self.tb_dlt_btn.pack(side="top", fill="x")
-        self.tb_edt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="E", height=24)
+        self.tb_edt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✎", height=24)
         self.tb_edt_btn.pack(side="top", fill="x")
 
         self.main = ctk.CTkFrame(self.body, corner_radius=0)
@@ -63,7 +66,7 @@ class App(ctk.CTk):
         self.form_inpt_type.pack(side="left", padx=[0, 10], pady=10)
         self.form_inpt_isencrptd = ctk.CTkCheckBox(self.form_inpt, corner_radius=0, text="Encrypted", command=self.change_handler)
         self.form_inpt_isencrptd.pack(side="left", padx=[0, 10], pady=10)
-        self.form_inpt_pswrdprtcl = ctk.CTkComboBox(self.form_inpt, corner_radius=0, values=["Defualt", "ToPower3", "None"], state="readonly", width=144)
+        self.form_inpt_pswrdprtcl = ctk.CTkComboBox(self.form_inpt, corner_radius=0, values=["Defualt", "None"], state="readonly", width=144)
         self.form_inpt_pswrdprtcl.set("Password Protocol")
         self.form_btn = ctk.CTkFrame(self.form, corner_radius=0)
         self.form_btn.pack(side="top", fill="x")
@@ -71,6 +74,22 @@ class App(ctk.CTk):
         self.form_btn_sv.pack(side="left", fill="both", expand=True, padx=[10, 0], pady=[0, 10])
         self.form_btn_clr = ctk.CTkButton(self.form_btn, corner_radius=0, text="clear", command=self.clear)
         self.form_btn_clr.pack(side="left", fill="both", expand=True, padx=[10, 10], pady=[0, 10])
+
+        self.config_panel = ctk.CTkFrame(self.body, corner_radius=0)
+        self.cnfg_pnl_mn = ctk.CTkFrame(self.config_panel, corner_radius=0)
+        self.cnfg_pnl_mn.pack(side="top", fill="both", expand=True)
+        self.cnfg_pnl_mn.grid_columnconfigure(1, weight=1)
+        self.cnfg_pnl_mn_UI_lbl = ctk.CTkLabel(self.cnfg_pnl_mn, text="Appearance")
+        self.cnfg_pnl_mn_UI_lbl.grid(row=0, column=0, columnspan=2, sticky="we")
+        self.cnfg_pnl_mn_UI_thm_lbl = ctk.CTkLabel(self.cnfg_pnl_mn, text="Theme:")
+        self.cnfg_pnl_mn_UI_thm_lbl.grid(row=1, column=0, sticky="w", padx=[10, 0], pady=10)
+        self.cnfg_pnl_mn_UI_thm_cb = ctk.CTkComboBox(self.cnfg_pnl_mn, corner_radius=0, values=self.get_themes(), state="readonly")
+        self.cnfg_pnl_mn_UI_thm_cb.grid(row=1, column=1, sticky="w", padx=[10, 0], pady=10)
+        self.cnfg_pnl_btns = ctk.CTkFrame(self.config_panel, corner_radius=0)
+        self.cnfg_pnl_btns.pack(side="top", fill="x")
+        self.cnfg_pnl_sv = ctk.CTkButton(self.cnfg_pnl_btns, corner_radius=0, text="save", command=self.save_config)
+        self.cnfg_pnl_sv.pack(side="right", padx=10, pady=10)
+
         self.construct_table()
         self.load_config()
         self.load_theme()
@@ -79,6 +98,27 @@ class App(ctk.CTk):
     def load_config(self):
         with open(self.CONFIG_FILE, "r") as f:
             self.config = json.load(f)
+        self.cnfg_pnl_mn_UI_thm_cb.set(self.config["theme"])
+        self.CONFIG_CHANGE = False
+
+    def save_config(self):
+        self.change_config()
+        with open(self.CONFIG_FILE, "w") as f:
+            json.dump(self.config, f, indent=4)
+        if self.CONFIG_CHANGE:
+            self.restart()
+        else:
+            self.config_panel.place_forget()
+
+    def restart(self):
+        self.destroy()
+        subprocess.Popen([sys.executable, os.path.abspath("app.py")])
+
+    def change_config(self):
+        nTheme = self.cnfg_pnl_mn_UI_thm_cb.get()
+        if nTheme != self.config["theme"]:
+            self.CONFIG_CHANGE = True
+            self.config["theme"] = nTheme
 
     def load_theme(self):
         with open(f"themes/{self.config["theme"]}.json") as f:
@@ -120,6 +160,14 @@ class App(ctk.CTk):
         self.form_inpt_isencrptd.configure(fg_color=self.theme["form"]["checkbox"]["fg-color"], hover_color=self.theme["form"]["checkbox"]["hover-color"], border_color=self.theme["form"]["checkbox"]["border-color"], text_color=self.theme["form"]["checkbox"]["text-color"])
         self.form_btn_sv.configure(fg_color=self.theme["form"]["button"]["primary-fg-color"], hover_color=self.theme["form"]["button"]["primary-hover-color"], text_color=self.theme["form"]["button"]["primary-text-color"])
         self.form_btn_clr.configure(fg_color=self.theme["form"]["button"]["secondary-fg-color"], hover_color=self.theme["form"]["button"]["secondary-hover-color"], text_color=self.theme["form"]["button"]["secondary-text-color"])
+        self.config_btn.configure(fg_color=self.theme["config-panel"]["open-fg-color"], hover_color=self.theme["config-panel"]["open-hover-color"], text_color=self.theme["config-panel"]["open-inner-color"])
+        self.config_panel.configure(fg_color=self.theme["config-panel"]["fg-color"])
+        self.cnfg_pnl_mn.configure(fg_color="transparent")
+        self.cnfg_pnl_btns.configure(fg_color="transparent")
+        self.cnfg_pnl_mn_UI_lbl.configure(fg_color=self.theme["config-panel"]["title-fg-color"], text_color=self.theme["config-panel"]["title-text-color"])
+        self.cnfg_pnl_mn_UI_thm_lbl.configure(text_color=self.theme["config-panel"]["label-text-color"])
+        self.cnfg_pnl_mn_UI_thm_cb.configure(fg_color=self.theme["config-panel"]["input-fg-color"], border_color=self.theme["config-panel"]["input-border-color"], button_color=self.theme["config-panel"]["input-button-color"], text_color=self.theme["config-panel"]["input-text-color"])
+        self.cnfg_pnl_sv.configure(fg_color=self.theme["config-panel"]["button-fg-color"], hover_color=self.theme["config-panel"]["button-hover-color"], text_color=self.theme["config-panel"]["button-text-color"])
 
     def change_handler(self):
         if self.form_inpt_isencrptd.get():
@@ -235,6 +283,15 @@ class App(ctk.CTk):
         del self.JSON_DATA[self.selected_index]
         self.update_data()
         self.refresh()
+
+    def toggle_config_panel(self):
+        if self.config_panel.winfo_ismapped():
+            self.config_panel.place_forget()
+        else:
+            self.config_panel.place(x=0, y=0, relwidth=1, relheight=1)
+
+    def get_themes(self):
+        return [f.replace(".json", "") for f in os.listdir("themes") if f.endswith(".json")]
 
 if __name__ == "__main__":
     app = App()
