@@ -7,12 +7,16 @@ def resource_path(rel_path):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, rel_path)
     return os.path.join(os.path.abspath("."), rel_path)
+def external_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(os.path.dirname(sys.executable), relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 ctk.set_appearance_mode("System")
 
 class App(ctk.CTk):
-    JSON_FILE = "data.json"
-    CONFIG_FILE = "config.json"
+    JSON_FILE = external_path("data.json")
+    CONFIG_FILE = external_path("config.json")
     JSON_DATA = []
     def __init__(self):
         super().__init__()
@@ -121,7 +125,7 @@ class App(ctk.CTk):
             self.config["theme"] = nTheme
 
     def load_theme(self):
-        with open(f"themes/{self.config["theme"]}.json") as f:
+        with open(external_path(f"themes/{self.config["theme"]}.json")) as f:
             self.theme = json.load(f)
 
     def apply_theme(self):
