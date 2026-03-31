@@ -125,7 +125,7 @@ class App(ctk.CTk):
                         lbl.pack(side="left", padx=[12, 6])
                         val = ctk.CTkLabel(frame, text=", ".join(value) if isinstance(value, list) else value)
                         val.pack(side="left")
-                    edit = ctk.CTkButton(sec, text="✎", width=24, command=lambda: self.config_dataEntry_edit_handler(row))
+                    edit = ctk.CTkButton(sec, text="✎", width=24, command=lambda r=row, s=sec: self.config_dataEntry_edit_handler(r, s))
                     edit.grid(row=row, column=3, padx=12)
             sec.pack(side="top", fill="x")
         button_frame = ctk.CTkFrame(panel)
@@ -308,8 +308,39 @@ class App(ctk.CTk):
             self.config_panel.place_forget()
         else:
             self.config_panel.place(x=0, y=0, relwidth=1, relheight=1)
-    def config_dataEntry_edit_handler(rows):
-        print(rows)
+    def config_dataEntry_edit_handler(self, row:int, section:ctk.CTkFrame):
+        button = section.grid_slaves(row=row, column=3)[0]
+        button.configure(text="✓", command=lambda: self.config_dataEntry_submit_handler(row, section))
+        columns = []
+        for c in range(3):
+            slaves = section.grid_slaves(row=row, column=c)
+            if slaves:
+                columns.append(slaves[0])
+        for element in columns:
+            for i, lbl in enumerate(element.winfo_children()):
+                if i == 0:
+                    continue
+                else:
+                    lbl.pack_forget()
+                    change = ctk.CTkEntry(element)
+                    change.insert(0, lbl.cget("text"))
+                    change.pack(side="left")
+    def config_dataEntry_submit_handler(self, row:int, section:ctk.CTkFrame):
+        button = section.grid_slaves(row=row, column=3)[0]
+        button.configure(text="✎", command=lambda: self.config_dataEntry_edit_handler(row, section))
+        columns = []
+        for c in range(3):
+            slaves = section.grid_slaves(row=row, column=c)
+            if slaves:
+                columns.append(slaves[0])
+        for element in columns:
+            children = element.winfo_children()
+            lbl = children[1]   # the label (index 0)
+            entry = children[2] # the entry (index 1, created after pack_forget)
+            if len(children) > 1 and isinstance(children[2], ctk.CTkEntry):
+                lbl.configure(text=entry.get())
+                entry.destroy()
+                lbl.pack(side="left")
 
 if __name__ == "__main__":
     app = App()
