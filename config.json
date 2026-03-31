@@ -1,22 +1,24 @@
 {
-    "theme": "Midnight",
-    "form": [
+    "Appearance":{
+        "Theme": "Midnight"
+    },
+    "Data Entry": [
         {
-            "title": "ID",
-            "type": "small entry"
+            "Title": "ID",
+            "Type": "small entry"
         },
         {
-            "title": "Title",
-            "type": "medium entry"
+            "Title": "Title",
+            "Type": "medium entry"
         },
         {
-            "title": "Description",
-            "type": "large entry"
+            "Title": "Description",
+            "Type": "large entry"
         },
         {
-            "title": "Type",
-            "type": "select",
-            "values": [
+            "Title": "Type",
+            "Type": "select",
+            "Values": [
                 "HDD",
                 "SSD",
                 "NVMe",

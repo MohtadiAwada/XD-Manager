@@ -18,8 +18,8 @@ class App(ctk.CTk):
     CONFIG_FILE = external_path("config.json")
     def __init__(self):
         super().__init__()
-        self.selected_index = None
-        self.row_widgets = []
+        self.SELECTED = None
+        self.ROWS = []
         
         self.title("External Disks Manager")
         self.iconbitmap(resource_path("icon.ico"))
@@ -54,66 +54,89 @@ class App(ctk.CTk):
         self.table.pack(fill="both", expand=True)
         self.form = ctk.CTkFrame(self.main, corner_radius=0)
         self.form.pack(side="bottom", fill="x")
+        #config panel (temp)
+        self.config_panel = self.construct_configPanel(self.body, self.CONFIG)
 
-        self.config_panel = ctk.CTkFrame(self.body, corner_radius=0)
-        self.cnfg_pnl_mn = ctk.CTkFrame(self.config_panel, corner_radius=0)
-        self.cnfg_pnl_mn.pack(side="top", fill="both", expand=True)
-        self.cnfg_pnl_mn.grid_columnconfigure(1, weight=1)
-        self.cnfg_pnl_mn_UI_lbl = ctk.CTkLabel(self.cnfg_pnl_mn, text="Appearance")
-        self.cnfg_pnl_mn_UI_lbl.grid(row=0, column=0, columnspan=2, sticky="we")
-        self.cnfg_pnl_mn_UI_thm_lbl = ctk.CTkLabel(self.cnfg_pnl_mn, text="Theme:")
-        self.cnfg_pnl_mn_UI_thm_lbl.grid(row=1, column=0, sticky="w", padx=[10, 0], pady=10)
-        self.cnfg_pnl_mn_UI_thm_cb = ctk.CTkComboBox(self.cnfg_pnl_mn, corner_radius=0, values=[f.replace(".json", "") for f in os.listdir("themes") if f.endswith(".json")], state="readonly")
-        self.cnfg_pnl_mn_UI_thm_cb.grid(row=1, column=1, sticky="w", padx=[10, 0], pady=10)
-        self.cnfg_pnl_btns = ctk.CTkFrame(self.config_panel, corner_radius=0)
-        self.cnfg_pnl_btns.pack(side="top", fill="x")
-        self.cnfg_pnl_sv = ctk.CTkButton(self.cnfg_pnl_btns, corner_radius=0, text="save", command=self.save_config)
-        self.cnfg_pnl_sv.pack(side="right", padx=10, pady=10)
-
-        self.construct_table()
+        self.render_data()
         self.apply_config()    
     #data manipulation
     def load_config(self):
-        with open(self.CONFIG_FILE, "r") as f:
-            self.config = json.load(f)
+        def load_theme(theme_name:str):
+            with open(external_path(f"themes/{theme_name}.json")) as theme_file:
+                self.theme = json.load(theme_file)
+        with open(self.CONFIG_FILE, "r") as config_file:
+            self.CONFIG = json.load(config_file)
         self.CONFIG_CHANGE = False
-        self.load_theme()
+        load_theme(self.CONFIG["Appearance"]["Theme"])
     def change_config(self):
         nTheme = self.cnfg_pnl_mn_UI_thm_cb.get()
-        if nTheme != self.config["theme"]:
+        if nTheme != self.CONFIG["Appearance"]["Theme"]:
             self.CONFIG_CHANGE = True
-            self.config["theme"] = nTheme
+            self.CONFIG["Appearance"]["Theme"] = nTheme
     def save_config(self):
         self.change_config()
         with open(self.CONFIG_FILE, "w") as f:
-            json.dump(self.config, f, indent=4)
+            json.dump(self.CONFIG, f, indent=4)
         if self.CONFIG_CHANGE:
             self.load_config()
-            self.load_theme()
-            self.apply_theme(self.theme)
+            self.apply_config()
         self.config_panel.place_forget()
     def apply_config(self):
-        self.cnfg_pnl_mn_UI_thm_cb.set(self.config["theme"])
-        self.construct_form(self.config["form"], self.form)
+        #self.cnfg_pnl_mn_UI_thm_cb.set(self.CONFIG["Appearance"]["Theme"])
+        self.construct_form(self.CONFIG["Data Entry"], self.form)
         self.apply_theme(self.theme)
-    def get_data(self):
+    def load_data(self):
         try:
             with open(self.JSON_FILE, "r") as file:
-                data = json.load(file)
-            self.DATA = data
+                self.DATA = json.load(file)
         except FileNotFoundError:
             self.DATA = []
-    def update_data(self):
+    def save_data(self):
         with open(self.JSON_FILE, 'w') as f:
             json.dump(self.DATA, f, indent=4)
-    def load_theme(self):
-        with open(external_path(f"themes/{self.config["theme"]}.json")) as f:
-            self.theme = json.load(f)
+    def render_data(self):
+        self.load_data()
+        self.ROWS = self.construct_table(self.table, self.DATA)
+        self.SELECTED = None
     #doc manepulation
-    def construct_table(self):
-        def construct_row(rowObj, index):
+    def construct_configPanel(self, parent:ctk.CTkFrame, config:dict) -> ctk.CTkFrame:
+        panel = ctk.CTkFrame(parent)
+        main = ctk.CTkFrame(panel)
+        main.pack(side="top", fill="x")
+        for title, section in config.items():
+            ttl = ctk.CTkLabel(main, text=title)
+            ttl.pack(side="top", fill="x")
+            if title == "Appearance":
+                sec = ctk.CTkFrame(main)
+                sec.grid_columnconfigure(1, weight=1)
+                for index, (label, value) in enumerate(section.items()):
+                    lbl = ctk.CTkLabel(sec, text=label+":")
+                    lbl.grid(row=index, column=0, padx=[12, 6])
+                    val = ctk.CTkLabel(sec, text=value) #temp
+                    val.grid(row=index, column=1, sticky="w")
+            elif title == "Data Entry":
+                sec = ctk.CTkFrame(main)
+                sec.grid_columnconfigure(2, weight=1)
+                for row, item in enumerate(section):
+                    for index, (label, value) in enumerate(item.items()):
+                        frame = ctk.CTkFrame(sec)
+                        frame.grid(row=row, column=index, sticky="w")
+                        lbl = ctk.CTkLabel(frame, text=label+":")
+                        lbl.pack(side="left", padx=[12, 6])
+                        val = ctk.CTkLabel(frame, text=", ".join(value) if isinstance(value, list) else value)
+                        val.pack(side="left")
+                    edit = ctk.CTkButton(sec, text="✎", width=24, command=lambda: self.config_dataEntry_edit_handler(row))
+                    edit.grid(row=row, column=3, padx=12)
+            sec.pack(side="top", fill="x")
+        button_frame = ctk.CTkFrame(panel)
+        button_frame.pack(side="bottom", fill="x")
+        save_button = ctk.CTkButton(button_frame, text="save")
+        save_button.pack(side="right", padx=12, pady=12)
+        return panel
+    def construct_table(self, table:ctk.CTkFrame, data:dict) -> list[ctk.CTkFrame]:
+        def construct_row(rowObj:dict, index:int):
             click = lambda e, i=index: self.select_handler(i)
-            row = ctk.CTkFrame(self.table, corner_radius=0)
+            row = ctk.CTkFrame(table, corner_radius=0)
             row.pack(side="top")
             id = ctk.CTkLabel(row, text=rowObj["id"], corner_radius=0, width=48)
             ttype = ctk.CTkLabel(row, text=rowObj["type"], corner_radius=0, width=150)
@@ -126,11 +149,11 @@ class App(ctk.CTk):
             for e in [id, ttype, title, description, enc]:
                 e.pack(side="left")
                 e.bind("<Button-1>", click)
-            self.row_widgets.append(row)
-        self.get_data()
-        for element in self.table.winfo_children():
+            rows_widget.append(row)
+        rows_widget = []
+        for element in table.winfo_children():
             element.destroy()
-        thead = ctk.CTkFrame(self.table, corner_radius=0)
+        thead = ctk.CTkFrame(table, corner_radius=0)
         thead.pack(side="top")
         thead_id = ctk.CTkLabel(thead, corner_radius=0, text="ID", width=48)
         thead_type = ctk.CTkLabel(thead, corner_radius=0, text="Type", width=150)
@@ -139,26 +162,27 @@ class App(ctk.CTk):
         thead_state = ctk.CTkLabel(thead, corner_radius=0, width=148, text="State")
         for e in [thead_id, thead_type, thead_title, thead_dscrptn, thead_state]:
             e.pack(side="left")
-        self.row_widgets = []
-        self.selected_index = None
-        for i, rowObj in enumerate(self.DATA):
+        for i, rowObj in enumerate(data):
             construct_row(rowObj, i)
+        return rows_widget
     def construct_form(self, input_Objs:list, form:ctk.CTkFrame):
+        for element in form.winfo_children():
+            element.destroy()
         inputs = ctk.CTkFrame(form)
         inputs.pack(fill="x", padx=[0, 12], pady=[12, 12])
         for obj in input_Objs:
-            match obj["type"]:
+            match obj["Type"]:
                 case "small entry":
-                    inpt = ctk.CTkEntry(inputs, width=60, placeholder_text=obj["title"])
+                    inpt = ctk.CTkEntry(inputs, width=60, placeholder_text=obj["Title"])
                 case "medium entry":
-                    inpt = ctk.CTkEntry(inputs, width=144, placeholder_text=obj["title"])
+                    inpt = ctk.CTkEntry(inputs, width=144, placeholder_text=obj["Title"])
                 case "large entry":
-                    inpt = ctk.CTkEntry(inputs, placeholder_text=obj["title"])
+                    inpt = ctk.CTkEntry(inputs, placeholder_text=obj["Title"])
                     inpt.pack(side="left", fill="both", expand=True, padx=[12, 0])
                     continue
                 case "select":
-                    inpt = ctk.CTkComboBox(inputs, width=144, values=obj["values"])
-                    inpt.set(obj["title"])
+                    inpt = ctk.CTkComboBox(inputs, width=144, values=obj["Values"])
+                    inpt.set(obj["Title"])
                 case _:
                     continue
             inpt.pack(side="left", padx=[12, 0])
@@ -209,12 +233,27 @@ class App(ctk.CTk):
                         element.configure(fg_color=theme["form"]["button"]["secondary-fg-color"], hover_color=theme["form"]["button"]["secondary-hover-color"], text_color=theme["form"]["button"]["secondary-text-color"])
         self.config_btn.configure(fg_color=theme["config-panel"]["open-fg-color"], hover_color=theme["config-panel"]["open-hover-color"], text_color=theme["config-panel"]["open-inner-color"])
         self.config_panel.configure(fg_color=theme["config-panel"]["fg-color"])
-        self.cnfg_pnl_mn.configure(fg_color="transparent")
-        self.cnfg_pnl_btns.configure(fg_color="transparent")
-        self.cnfg_pnl_mn_UI_lbl.configure(fg_color=theme["config-panel"]["title-fg-color"], text_color=theme["config-panel"]["title-text-color"])
-        self.cnfg_pnl_mn_UI_thm_lbl.configure(text_color=theme["config-panel"]["label-text-color"])
-        self.cnfg_pnl_mn_UI_thm_cb.configure(fg_color=theme["config-panel"]["input-fg-color"], border_color=theme["config-panel"]["input-border-color"], button_color=theme["config-panel"]["input-button-color"], text_color=theme["config-panel"]["input-text-color"])
-        self.cnfg_pnl_sv.configure(fg_color=theme["config-panel"]["button-fg-color"], hover_color=theme["config-panel"]["button-hover-color"], text_color=theme["config-panel"]["button-text-color"])
+        for i, part in enumerate(self.config_panel.winfo_children()):
+            if i == 0:
+                part.configure(fg_color="transparent")
+                for element in part.winfo_children():
+                    if isinstance(element, ctk.CTkLabel):
+                        element.configure(fg_color=theme["config-panel"]["title-fg-color"], text_color=theme["config-panel"]["title-text-color"])
+                    else:
+                        element.configure(fg_color="transparent")
+                        for children in element.winfo_children():
+                            if isinstance(children, ctk.CTkFrame):
+                                children.configure(fg_color="transparent")
+                                for child in children.winfo_children():
+                                    child.configure(text_color=theme["config-panel"]["label-text-color"])
+                            elif isinstance(children, ctk.CTkButton):
+                                children.configure(fg_color=theme["toolbar"]["tool-fg-color"], hover_color=theme["toolbar"]["tool-hover-color"], text_color=theme["toolbar"]["tool-inner-color"])
+                            else:
+                                children.configure(text_color=theme["config-panel"]["label-text-color"])
+            else:
+                part.configure(fg_color="transparent")
+                for button in part.winfo_children():
+                    button.configure(fg_color=theme["config-panel"]["button-fg-color"], hover_color=theme["config-panel"]["button-hover-color"], text_color=theme["config-panel"]["button-text-color"])
     #event handle
     def change_handler(self):
         if self.form_inpt_isencrptd.get():
@@ -222,7 +261,7 @@ class App(ctk.CTk):
         else:
             self.form_inpt_pswrdprtcl.pack_forget()
     def refresh_handler(self):
-        self.construct_table()
+        self.render_data()
         self.apply_theme(self.theme)
     def submit_handler(self):
         obj = {}
@@ -240,7 +279,7 @@ class App(ctk.CTk):
             obj["passwordProtocol"] = ""
         self.clear_handler()
         self.DATA.append(obj)
-        self.update_data()
+        self.save_data()
         self.refresh_handler()
     def clear_handler(self):
         for input in [self.form_inpt_id, self.form_inpt_ttl, self.form_inpt_dscrptn]:
@@ -253,22 +292,24 @@ class App(ctk.CTk):
         self.change_handler()
         self.form_inpt_pswrdprtcl.set("Password Protocol")
     def select_handler(self, index):
-        if self.selected_index is not None:
-            color = self.theme["table"]["row-fg-color-1"] if self.selected_index%2==0 else self.theme["table"]["row-fg-color-2"]
-            self.row_widgets[self.selected_index].configure(fg_color=color)
-        self.selected_index = index
-        self.row_widgets[index].configure(fg_color=self.theme["table"]["row-fg-color-selected"])
+        if self.SELECTED is not None:
+            color = self.theme["table"]["row-fg-color-1"] if self.SELECTED%2==0 else self.theme["table"]["row-fg-color-2"]
+            self.ROWS[self.SELECTED].configure(fg_color=color)
+        self.SELECTED = index
+        self.ROWS[index].configure(fg_color=self.theme["table"]["row-fg-color-selected"])
     def delete_handler(self):
-        if self.selected_index is None:
+        if self.SELECTED is None:
             return
-        del self.DATA[self.selected_index]
-        self.update_data()
+        del self.DATA[self.SELECTED]
+        self.save_data()
         self.refresh_handler()
     def config_panel_toggle_handler(self):
         if self.config_panel.winfo_ismapped():
             self.config_panel.place_forget()
         else:
             self.config_panel.place(x=0, y=0, relwidth=1, relheight=1)
+    def config_dataEntry_edit_handler(rows):
+        print(rows)
 
 if __name__ == "__main__":
     app = App()
