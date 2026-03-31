@@ -16,6 +16,12 @@ ctk.set_appearance_mode("System")
 class App(ctk.CTk):
     JSON_FILE = external_path("data.json")
     CONFIG_FILE = external_path("config.json")
+    test = [
+        {"type": "small entry"},
+        {"type": "medium entry"},
+        {"type": "large entry"},
+        {"type": "select"}
+    ]
     def __init__(self):
         super().__init__()
         self.selected_index = None
@@ -29,7 +35,7 @@ class App(ctk.CTk):
         self.header = ctk.CTkFrame(self, height=24, corner_radius=0)
         self.header.pack(side="top", fill="x")
         self.header.pack_propagate(False)
-        self.config_btn = ctk.CTkButton(self.header, corner_radius=0, width=24, text="☰", command=self.toggle_config_panel)
+        self.config_btn = ctk.CTkButton(self.header, corner_radius=0, width=24, text="☰", command=self.config_panel_toggle_handler)
         self.config_btn.pack(side="left", pady=0, padx=0)
         self.title = ctk.CTkLabel(self.header, text="External-Disks-Manager")
         self.title.pack(pady=0, padx=0)
@@ -41,9 +47,9 @@ class App(ctk.CTk):
         self.toolbar.pack(side="left", fill="both", expand=False)
         self.toolbar.pack_propagate(False)
         self.tb_rfrsh_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="↻", height=24, command=self.refresh_handler)
-        self.tb_dlt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✕", height=24, command=self.delete)
+        self.tb_dlt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✕", height=24, command=self.delete_handler)
         self.tb_edt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✎", height=24)
-        for e in [self.tb_rfrsh_btn, self.tb_dlt_btn, self.tb_edt_btn]:
+        for e in self.toolbar.winfo_children():
             e.pack(side="top")
 
         self.main = ctk.CTkFrame(self.body, corner_radius=0)
@@ -54,7 +60,8 @@ class App(ctk.CTk):
 
         self.form = ctk.CTkFrame(self.main, corner_radius=0)
         self.form.pack(side="bottom", fill="x")
-        self.form_inpt = ctk.CTkFrame(self.form, corner_radius=0)
+        self.construct_form(self.test, self.form)
+        """self.form_inpt = ctk.CTkFrame(self.form, corner_radius=0)
         self.form_inpt.pack(side="top", fill="x")
         self.form_inpt_id = ctk.CTkEntry(self.form_inpt, corner_radius=0, width=48, placeholder_text="ID")
         self.form_inpt_id.pack(side="left", padx=[10, 0], pady=10)
@@ -73,8 +80,8 @@ class App(ctk.CTk):
         self.form_btn.pack(side="top", fill="x")
         self.form_btn_sv = ctk.CTkButton(self.form_btn, corner_radius=0, text="save", command=self.submit_handler)
         self.form_btn_sv.pack(side="left", fill="both", expand=True, padx=[10, 0], pady=[0, 10])
-        self.form_btn_clr = ctk.CTkButton(self.form_btn, corner_radius=0, text="clear", command=self.clear)
-        self.form_btn_clr.pack(side="left", fill="both", expand=True, padx=[10, 10], pady=[0, 10])
+        self.form_btn_clr = ctk.CTkButton(self.form_btn, corner_radius=0, text="clear", command=self.clear_handler)
+        self.form_btn_clr.pack(side="left", fill="both", expand=True, padx=[10, 10], pady=[0, 10])"""
 
         self.config_panel = ctk.CTkFrame(self.body, corner_radius=0)
         self.cnfg_pnl_mn = ctk.CTkFrame(self.config_panel, corner_radius=0)
@@ -94,7 +101,7 @@ class App(ctk.CTk):
         self.construct_table()
         self.load_config()
         self.load_theme()
-        self.apply_theme()
+        #self.apply_theme()
     
     #data manipulation
     def load_config(self):
@@ -115,9 +122,7 @@ class App(ctk.CTk):
             self.load_config()
             self.load_theme()
             self.apply_theme()
-            self.config_panel.place_forget()
-        else:
-            self.config_panel.place_forget()
+        self.config_panel.place_forget()
     def get_data(self):
         try:
             with open(self.JSON_FILE, "r") as file:
@@ -132,51 +137,68 @@ class App(ctk.CTk):
         with open(external_path(f"themes/{self.config["theme"]}.json")) as f:
             self.theme = json.load(f)
     #doc manepulation
-    def construct_row(self, rowObj, index):
-        click = lambda e, i=index: self.handle_select(i)
-        row = ctk.CTkFrame(self.table, corner_radius=0)
-        row.pack(side="top")
-        id = ctk.CTkLabel(row, text=rowObj["id"], corner_radius=0, width=48)
-        ttype = ctk.CTkLabel(row, text=rowObj["type"], corner_radius=0, width=150)
-        title = ctk.CTkLabel(row, text=rowObj["title"], corner_radius=0, width=180)
-        description = ctk.CTkLabel(row, text=rowObj["description"], corner_radius=0, width=400)
-        if(rowObj["isEncrypted"]):
-            enc = ctk.CTkLabel(row, text=f"Encrypted ({rowObj["passwordProtocol"]})", width=148, corner_radius=0)
-        else:
-            enc = ctk.CTkLabel(row, text="Unlocked", width=148, corner_radius=0,)
-        for e in [id, ttype, title, description, enc]:
-            e.pack(side="left")
-            e.bind("<Button-1>", click)
-        self.row_widgets.append(row)
     def construct_table(self):
+        def construct_row(rowObj, index):
+            click = lambda e, i=index: self.select_handler(i)
+            row = ctk.CTkFrame(self.table, corner_radius=0)
+            row.pack(side="top")
+            id = ctk.CTkLabel(row, text=rowObj["id"], corner_radius=0, width=48)
+            ttype = ctk.CTkLabel(row, text=rowObj["type"], corner_radius=0, width=150)
+            title = ctk.CTkLabel(row, text=rowObj["title"], corner_radius=0, width=180)
+            description = ctk.CTkLabel(row, text=rowObj["description"], corner_radius=0, width=400)
+            if(rowObj["isEncrypted"]):
+                enc = ctk.CTkLabel(row, text=f"Encrypted ({rowObj["passwordProtocol"]})", width=148, corner_radius=0)
+            else:
+                enc = ctk.CTkLabel(row, text="Unlocked", width=148, corner_radius=0,)
+            for e in [id, ttype, title, description, enc]:
+                e.pack(side="left")
+                e.bind("<Button-1>", click)
+            self.row_widgets.append(row)
         self.get_data()
         for element in self.table.winfo_children():
             element.destroy()
-        table_head = ctk.CTkFrame(self.table, corner_radius=0)
-        table_head.pack(fill="x")
-        table_head_id = ctk.CTkLabel(table_head, corner_radius=0, text="ID", width=48)
-        table_head_id.pack(side="left")
-        table_head_type = ctk.CTkLabel(table_head, corner_radius=0, text="Type", width=150)
-        table_head_type.pack(side="left")
-        table_head_title = ctk.CTkLabel(table_head, corner_radius=0, text="Title", width=180)
-        table_head_title.pack(side="left")
-        table_head_dscrptn = ctk.CTkLabel(table_head, corner_radius=0, text="Description", width=400)
-        table_head_dscrptn.pack(side="left")
-        table_head_state = ctk.CTkLabel(table_head, corner_radius=0, width=148, text="State")
-        table_head_state.pack(side="left")
-        data = self.DATA
+        thead = ctk.CTkFrame(self.table, corner_radius=0)
+        thead.pack(side="top")
+        thead_id = ctk.CTkLabel(thead, corner_radius=0, text="ID", width=48)
+        thead_type = ctk.CTkLabel(thead, corner_radius=0, text="Type", width=150)
+        thead_title = ctk.CTkLabel(thead, corner_radius=0, text="Title", width=180)
+        thead_dscrptn = ctk.CTkLabel(thead, corner_radius=0, text="Description", width=400)
+        thead_state = ctk.CTkLabel(thead, corner_radius=0, width=148, text="State")
+        for e in [thead_id, thead_type, thead_title, thead_dscrptn, thead_state]:
+            e.pack(side="left")
         self.row_widgets = []
         self.selected_index = None
-        for i, rowObj in enumerate(data):
-            self.construct_row(rowObj, i)
+        for i, rowObj in enumerate(self.DATA):
+            construct_row(rowObj, i)
+    def construct_form(self, input_Objs:list, form:ctk.CTkFrame):
+        inputs = ctk.CTkFrame(form)
+        inputs.pack(fill="x")
+        for obj in input_Objs:
+            match obj["type"]:
+                case "small entry":
+                    inpt = ctk.CTkEntry(inputs, width=60)
+                case "medium entry":
+                    inpt = ctk.CTkEntry(inputs, width=144)
+                case "large entry":
+                    inpt = ctk.CTkEntry(inputs)
+                    inpt.pack(side="left", fill="both", expand=True)
+                    continue
+                case "select":
+                    inpt = ctk.CTkComboBox(inputs, width=144)
+                case _:
+                    continue
+            inpt.pack(side="left")
+        buttons = ctk.CTkFrame(form)
+        save_button = ctk.CTkButton(buttons)
+        clear_button = ctk.CTkButton(buttons)
     def apply_theme(self):
         self.configure(fg_color=self.theme["main"]["fg-color"])
         self.header.configure(fg_color=self.theme["header"]["fg-color"])
         self.title.configure(text_color=self.theme["header"]["text-color"])
         self.body.configure(fg_color=self.theme["main"]["fg-color"])
         self.toolbar.configure(fg_color=self.theme["toolbar"]["fg-color"])
-        for e in self.toolbar.winfo_children():
-            e.configure(fg_color=self.theme["toolbar"]["tool-fg-color"], hover_color=self.theme["toolbar"]["tool-hover-color"], text_color=self.theme["toolbar"]["tool-inner-color"])
+        for tool in self.toolbar.winfo_children():
+            tool.configure(fg_color=self.theme["toolbar"]["tool-fg-color"], hover_color=self.theme["toolbar"]["tool-hover-color"], text_color=self.theme["toolbar"]["tool-inner-color"])
         self.main.configure(fg_color=self.theme["main"]["fg-color"])
         self.table.configure(fg_color=self.theme["table"]["fg-color"])
         for i, e in enumerate(self.table.winfo_children()):
@@ -236,34 +258,33 @@ class App(ctk.CTk):
         else:
             obj["isEncrypted"] = False
             obj["passwordProtocol"] = ""
-        self.clear()
+        self.clear_handler()
         self.DATA.append(obj)
         self.update_data()
         self.refresh_handler()
-    def clear(self):
-        self.form_inpt_id.delete(0, "end")
+    def clear_handler(self):
+        for input in [self.form_inpt_id, self.form_inpt_ttl, self.form_inpt_dscrptn]:
+            input.delete(0, "end")
         self.form_inpt_id.configure(placeholder_text="ID")
-        self.form_inpt_ttl.delete(0, "end")
         self.form_inpt_ttl.configure(placeholder_text="Title")
-        self.form_inpt_dscrptn.delete(0, "end")
         self.form_inpt_dscrptn.configure(placeholder_text="Description")
         self.form_inpt_type.set("Type")
         self.form_inpt_isencrptd.deselect()
         self.change_handler()
         self.form_inpt_pswrdprtcl.set("Password Protocol")
-    def handle_select(self, index):
+    def select_handler(self, index):
         if self.selected_index is not None:
             color = self.theme["table"]["row-fg-color-1"] if self.selected_index%2==0 else self.theme["table"]["row-fg-color-2"]
             self.row_widgets[self.selected_index].configure(fg_color=color)
         self.selected_index = index
         self.row_widgets[index].configure(fg_color=self.theme["table"]["row-fg-color-selected"])
-    def delete(self):
+    def delete_handler(self):
         if self.selected_index is None:
             return
         del self.DATA[self.selected_index]
         self.update_data()
         self.refresh_handler()
-    def toggle_config_panel(self):
+    def config_panel_toggle_handler(self):
         if self.config_panel.winfo_ismapped():
             self.config_panel.place_forget()
         else:
