@@ -109,15 +109,17 @@ class App(ctk.CTk):
             ttl.pack(side="top", fill="x")
             if title == "Appearance":
                 sec = ctk.CTkFrame(main)
-                sec.grid_columnconfigure(1, weight=1)
+                sec.grid_columnconfigure(0, weight=1)
                 for index, (label, value) in enumerate(section.items()):
-                    lbl = ctk.CTkLabel(sec, text=label+":")
-                    lbl.grid(row=index, column=0, padx=[12, 6])
-                    val = ctk.CTkLabel(sec, text=value) #temp
-                    val.grid(row=index, column=1, sticky="w")
+                    frame = ctk.CTkFrame(sec)
+                    frame.grid(row=index, column=0, sticky="w")
+                    lbl = ctk.CTkLabel(frame, text=label+":")
+                    lbl.pack(side="left", padx=[12, 6])
+                    val = ctk.CTkLabel(frame, text=value)
+                    val.pack(side="left")
                     btn = ctk.CTkButton(sec, text="✎", width=24)
-                    btn.configure(command=lambda t="Data Entry", s=sec, btn=btn, r=index: self.cnfg_edit_handler(t, s, r, btn))
-                    btn.grid(row=index, column=2, padx=12)
+                    btn.configure(command=lambda t="Appearance", s=sec, r=index: self.cnfg_edit_handler(t, s, r))
+                    btn.grid(row=index, column=1, padx=12)
             elif title == "Data Entry":
                 sec = ctk.CTkFrame(main)
                 sec.grid_columnconfigure(2, weight=1)
@@ -130,9 +132,9 @@ class App(ctk.CTk):
                         val = ctk.CTkLabel(frame, text=", ".join(value) if isinstance(value, list) else value)
                         val.pack(side="left")
                     edit = ctk.CTkButton(sec, text="✎", width=24)
-                    edit.configure(command=lambda t="Data Entry", s=sec, btn=edit, r=row: self.cnfg_edit_handler(t, s, r, btn))
+                    edit.configure(command=lambda t="Data Entry", s=sec, r=row: self.cnfg_edit_handler(t, s, r))
                     edit.grid(row=row, column=3, padx=12)
-            sec.pack(side="top", fill="x")
+            sec.pack(side="top", fill="x", padx=0, pady=0)
         button_frame = ctk.CTkFrame(panel)
         button_frame.pack(side="bottom", fill="x")
         save_button = ctk.CTkButton(button_frame, text="save")
@@ -184,7 +186,7 @@ class App(ctk.CTk):
         for element in form.winfo_children():
             element.destroy()
         inputs = ctk.CTkFrame(form)
-        inputs.pack(fill="x", padx=[0, 12], pady=[12, 12])
+        inputs.pack(fill="x", padx=[0, 12], pady=12)
         for obj in input_Objs:
             match obj["Type"]:
                 case "small entry":
@@ -331,19 +333,104 @@ class App(ctk.CTk):
             self.config_panel.place_forget()
         else:
             self.config_panel.place(x=0, y=0, relwidth=1, relheight=1)
-    def cnfg_edit_handler(self, title:str, section:ctk.CTkFrame, row_num:int, button:ctk.CTkButton):
-        button.configure(text="✓")
+    def cnfg_edit_handler(self, title:str, section:ctk.CTkFrame, row_num:int):
         row = section.grid_slaves(row=row_num)
         temp = []
+        planB = False
         for cell in row:
             if isinstance(cell, ctk.CTkFrame):
-                temp.append({cell.winfo_children()[0].cget("text"): cell.winfo_children()[1].cget("text")})
+                temp.append({cell.winfo_children()[0].cget("text")[:-1]: cell.winfo_children()[1].cget("text")})
+            elif isinstance(cell, ctk.CTkLabel):
+                planB = True
+        if planB:
+            temp.append({row[2].cget("text")[:-1]: row[1].cget('text')})
         temp.reverse()
         for cell in row:
             cell.destroy()
         for i, lbl in enumerate(temp):
-            pass
-        print(temp)    
+            edit_frame = ctk.CTkFrame(section)
+            for k, v in lbl.items():
+                label = ctk.CTkLabel(edit_frame, text=k+":")
+                label.pack(side="left", padx=[12, 6])
+                input = None
+                match k:
+                    case "Type":
+                        input=ctk.CTkComboBox(edit_frame, values=["small entry", "medium entry", "large entry", "select"], state="readonly")
+                        input.configure(command=lambda val, s=section, r=row_num: self.type_change_handler(val, s, r))
+                        input.set(v)
+                    case "Class":
+                        input=ctk.CTkComboBox(edit_frame, values=["ID", "String"], state="readonly")
+                        input.set(v)
+                    case "Theme":
+                        themes = []
+                        for theme in os.listdir(external_path("themes")):
+                            if theme.endswith(".json"):
+                                themes.append(theme[:-5])
+                        input=ctk.CTkComboBox(edit_frame, values=themes, state="readonly")
+                        input.set(v)
+                    case _:
+                        input=ctk.CTkEntry(edit_frame)
+                        input.insert(0, v)
+                input.pack(side="left")
+            edit_frame.grid(row=row_num, column=i, sticky="w")
+            last = i
+        button = ctk.CTkButton(section, text="✓", width=24, command=lambda r=row_num, s=section, t=title: self.save_config_handler(r, s, t))
+        button.grid(row=row_num, column=last+1, padx=12)
+        self.apply_theme(self.theme)
+    def type_change_handler(self, value:str, section:ctk.CTkFrame, row_num:int):
+        slaves = section.grid_slaves(row=row_num, column=2)
+        match value:
+            case "select":
+                if not isinstance(slaves[0].winfo_children()[1], ctk.CTkEntry):
+                    slaves[0].destroy()
+                    frame = ctk.CTkFrame(section)
+                    frame.grid(row=row_num, column=2, sticky="w")
+                    label = ctk.CTkLabel(frame, text="Values:")
+                    label.pack(side="left", padx=[12, 6])
+                    input = ctk.CTkEntry(frame)
+                    input.pack(side="left")
+            case _:
+                if not isinstance(slaves[0].winfo_children()[1], ctk.CTkComboBox):
+                    slaves[0].destroy()
+                    frame = ctk.CTkFrame(section)
+                    frame.grid(row=row_num, column=2, sticky="w")
+                    label = ctk.CTkLabel(frame, text="Class:")
+                    label.pack(side="left", padx=[12, 6])
+                    input = ctk.CTkComboBox(frame, values=["ID", "String"], state="readonly")
+                    input.set("String")
+                    input.pack(side="left")
+        self.apply_theme(self.theme)
+    def save_config_handler(self, row_num, section, title):
+        row = section.grid_slaves(row=row_num)
+        temp = []
+        for cell in row:
+            if isinstance(cell, ctk.CTkFrame):
+                temp.append({cell.winfo_children()[0].cget("text")[:-1]: cell.winfo_children()[1].get()})
+        temp.reverse()
+        data_obj = {}
+        for i in temp:
+            for k, v in i.items():
+                data_obj[k]=v
+        if title == "Data Entry":
+            if data_obj["Type"] == "select":
+                data_obj["Values"] = data_obj["Values"].split(", ")
+            self.CONFIG[title][row_num] = data_obj
+        elif title == "Appearance":
+            self.CONFIG[title][next(iter(data_obj))] = data_obj[next(iter(data_obj))]
+        for cell in row:
+            cell.destroy()
+        for i, lbl in enumerate(temp):
+            display_frame = ctk.CTkFrame(section)
+            for k, v in lbl.items():
+                label = ctk.CTkLabel(display_frame, text=k+':')
+                label.pack(side="left", padx=[12, 6])
+                val_label = ctk.CTkLabel(display_frame, text=v)
+                val_label.pack(side="left")
+            display_frame.grid(row=row_num, column=i, sticky="w")
+            last = i
+        edit_button = ctk.CTkButton(section, text="✎", width=24, command=lambda t=title, s=section, r=row_num: self.cnfg_edit_handler(t, s, r))
+        edit_button.grid(row=row_num, column=last+1, padx=12)
+        self.apply_theme(self.theme)
     def error(self, message):
         pass
 
