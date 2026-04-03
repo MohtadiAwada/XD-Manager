@@ -20,45 +20,40 @@ class App(ctk.CTk):
         super().__init__()
         self.SELECTED = None
         self.ROWS = []
-        
+        self.load_config()
+        self.build_ui()
+        self.render_data()
+        self.apply_config()
+    def build_ui(self):
         self.title("External Disks Manager")
         self.iconbitmap(resource_path("icon.ico"))
         self.geometry("950x500")
-        #self.resizable(False, False)
-
-        self.load_config()
         
         self.header = ctk.CTkFrame(self, height=24, corner_radius=0)
         self.header.pack(side="top", fill="x")
         self.header.pack_propagate(False)
-        self.config_btn = ctk.CTkButton(self.header, corner_radius=0, width=24, text="☰", command=self.config_panel_toggle_handler)
-        self.config_btn.pack(side="left", pady=0, padx=0)
-        self.title = ctk.CTkLabel(self.header, text="External-Disks-Manager")
-        self.title.pack(pady=0, padx=0)
-        
+        self.header_config_btn = ctk.CTkButton(self.header, corner_radius=0, width=24, text="☰", command=self.config_panel_toggle_handler)
+        self.header_config_btn.pack(side="left", pady=0, padx=0)
+        self.header_title_lbl = ctk.CTkLabel(self.header, text="External-Disks-Manager")
+        self.header_title_lbl.pack(pady=0, padx=0)
+
         self.body = ctk.CTkFrame(self, corner_radius=0)
         self.body.pack(side="top", fill="both", expand=True)
-
         self.toolbar = ctk.CTkFrame(self.body, corner_radius=0, width=24)
         self.toolbar.pack(side="left", fill="both", expand=False)
         self.toolbar.pack_propagate(False)
-        self.tb_rfrsh_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="↻", height=24, command=self.refresh_handler)
-        self.tb_dlt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✕", height=24, command=self.delete_handler)
-        self.tb_edt_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✎", height=24)
+        self.toolbar_refresh_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="↻", height=24, command=self.refresh_handler)
+        self.toolbar_delete_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✕", height=24, command=self.delete_handler)
+        self.toolbar_edit_btn = ctk.CTkButton(self.toolbar, corner_radius=0, text="✎", height=24)
         for e in self.toolbar.winfo_children():
             e.pack(side="top")
-
         self.main = ctk.CTkFrame(self.body, corner_radius=0)
         self.main.pack(side="left", fill="both", expand=True)
         self.table = ctk.CTkFrame(self.main, corner_radius=0)
         self.table.pack(fill="both", expand=True)
         self.form = ctk.CTkFrame(self.main, corner_radius=0)
         self.form.pack(side="bottom", fill="x")
-
         self.config_panel = self.construct_configPanel(self.body, self.CONFIG)
-
-        self.render_data()
-        self.apply_config()    
     #data manipulation
     def load_config(self):
         def load_theme(theme_name:str):
@@ -68,21 +63,13 @@ class App(ctk.CTk):
             self.CONFIG = json.load(config_file)
         self.CONFIG_CHANGE = False
         load_theme(self.CONFIG["Appearance"]["Theme"])
-    def change_config(self):
-        nTheme = self.cnfg_pnl_mn_UI_thm_cb.get()
-        if nTheme != self.CONFIG["Appearance"]["Theme"]:
-            self.CONFIG_CHANGE = True
-            self.CONFIG["Appearance"]["Theme"] = nTheme
     def save_config(self):
-        self.change_config()
         with open(self.CONFIG_FILE, "w") as f:
             json.dump(self.CONFIG, f, indent=4)
-        if self.CONFIG_CHANGE:
-            self.load_config()
-            self.apply_config()
+        self.load_config()
+        self.apply_config()
         self.config_panel.place_forget()
     def apply_config(self):
-        #self.cnfg_pnl_mn_UI_thm_cb.set(self.CONFIG["Appearance"]["Theme"])
         self.construct_form(self.CONFIG["Data Entry"], self.form)
         self.apply_theme(self.theme)
     def load_data(self):
@@ -137,7 +124,7 @@ class App(ctk.CTk):
             sec.pack(side="top", fill="x", padx=0, pady=0)
         button_frame = ctk.CTkFrame(panel)
         button_frame.pack(side="bottom", fill="x")
-        save_button = ctk.CTkButton(button_frame, text="save")
+        save_button = ctk.CTkButton(button_frame, text="save", command=self.save_config)
         save_button.pack(side="right", padx=12, pady=12)
         return panel
     def construct_table(self, table:ctk.CTkFrame, data:dict) -> list[ctk.CTkFrame]:
@@ -212,7 +199,7 @@ class App(ctk.CTk):
     def apply_theme(self, theme:dict):
         self.configure(fg_color=theme["main"]["fg-color"])
         self.header.configure(fg_color=theme["header"]["fg-color"])
-        self.title.configure(text_color=theme["header"]["text-color"])
+        self.header_title_lbl.configure(text_color=theme["header"]["text-color"])
         self.body.configure(fg_color=theme["main"]["fg-color"])
         self.toolbar.configure(fg_color=theme["toolbar"]["fg-color"])
         for tool in self.toolbar.winfo_children():
@@ -249,7 +236,7 @@ class App(ctk.CTk):
                         element.configure(fg_color=theme["form"]["button"]["primary-fg-color"], hover_color=theme["form"]["button"]["primary-hover-color"], text_color=theme["form"]["button"]["primary-text-color"])
                     else:
                         element.configure(fg_color=theme["form"]["button"]["secondary-fg-color"], hover_color=theme["form"]["button"]["secondary-hover-color"], text_color=theme["form"]["button"]["secondary-text-color"])
-        self.config_btn.configure(fg_color=theme["config-panel"]["open-fg-color"], hover_color=theme["config-panel"]["open-hover-color"], text_color=theme["config-panel"]["open-inner-color"])
+        self.header_config_btn.configure(fg_color=theme["config-panel"]["open-fg-color"], hover_color=theme["config-panel"]["open-hover-color"], text_color=theme["config-panel"]["open-inner-color"])
         self.config_panel.configure(fg_color=theme["config-panel"]["fg-color"])
         for i, part in enumerate(self.config_panel.winfo_children()):
             if i == 0:
@@ -263,9 +250,14 @@ class App(ctk.CTk):
                             if isinstance(children, ctk.CTkFrame):
                                 children.configure(fg_color="transparent")
                                 for child in children.winfo_children():
-                                    child.configure(text_color=theme["config-panel"]["label-text-color"])
+                                    if isinstance(child, ctk.CTkEntry):
+                                        child.configure(fg_color=theme["config-panel"]["input-fg-color"], border_color=theme["config-panel"]["input-border-color"], text_color=theme["config-panel"]["input-text-color"])
+                                    elif isinstance(child, ctk.CTkComboBox):
+                                        child.configure(fg_color=theme["config-panel"]["input-fg-color"], border_color=theme["config-panel"]["input-border-color"], button_color=theme["config-panel"]["input-button-color"], text_color=theme["config-panel"]["input-text-color"])
+                                    else:
+                                        child.configure(text_color=theme["config-panel"]["label-text-color"])
                             elif isinstance(children, ctk.CTkButton):
-                                children.configure(fg_color=theme["toolbar"]["tool-fg-color"], hover_color=theme["toolbar"]["tool-hover-color"], text_color=theme["toolbar"]["tool-inner-color"])
+                                children.configure(fg_color=theme["toolbar"]["tool-fg-color"], hover_color=theme["toolbar"]["tool-hover-color"], text_color=theme["toolbar"]["tool-inner-color"])              
                             else:
                                 children.configure(text_color=theme["config-panel"]["label-text-color"])
             else:
