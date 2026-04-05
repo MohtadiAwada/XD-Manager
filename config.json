@@ -1,33 +1,35 @@
 {
-    "Appearance": {
-        "Theme": "Pearl"
-    },
-    "Data Entry": [
+    "db_path": "data.db",
+    "columns": [
         {
-            "Title": "ID",
-            "Type": "small entry",
-            "Class": "ID"
+            "title": "ID",
+            "type": "entry",
+            "db_type": "TEXT",
+            "pattern": "^\\d{4}$",
+            "required": true
         },
         {
-            "Title": "Title",
-            "Type": "medium entry",
-            "Class": "String"
+            "title": "Title",
+            "type": "entry",
+            "db_type": "TEXT",
+            "required": true
         },
         {
-            "Title": "Description",
-            "Type": "large entry",
-            "Class": "String"
+            "title": "Description",
+            "type": "entry",
+            "db_type": "TEXT"
         },
         {
-            "Title": "Type",
-            "Type": "select",
-            "Values": [
-                "HDD",
-                "SSD",
-                "NVMe",
-                "Flash Drive",
-                "Memory Card"
-            ]
+            "title": "Type",
+            "type": "select",
+            "values": ["HDD", "SSD", "Flash Drive", "Memory Card"],
+            "db_type": "TEXT",
+            "required": true
+        },
+        {
+            "title": "Is Ecrypted",
+            "type": "checkbox",
+            "db_type": "INTEGER"
         }
     ]
 }
