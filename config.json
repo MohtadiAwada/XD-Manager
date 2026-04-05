@@ -6,7 +6,8 @@
             "type": "entry",
             "db_type": "TEXT",
             "pattern": "^\\d{4}$",
-            "required": true
+            "required": true,
+            "unique": true
         },
         {
             "title": "Title",

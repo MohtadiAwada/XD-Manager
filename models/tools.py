@@ -2,24 +2,6 @@ import tkinter as tk
 from tkinter import ttk
 from windows.add_popup import addPopup
 
-tools = [
-    {
-        "name": "Add",
-        "sign": "\u002B",
-        "command": lambda: addPopup()
-    },
-    {
-        "name": "Delete",
-        "sign": "\u2715",
-        "command": None
-    },
-    {
-        "name": "Edit",
-        "sign": "\u270e",
-        "command": None
-    }
-]
-
 class ToolTip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -40,9 +22,32 @@ class ToolTip:
         if self.tooltip:
             self.tooltip.destroy()
             self.tooltip = None
-
-def load_tools(parent:tk.Frame):
-    for tool in tools:
-        btn = tk.Button(parent, text=tool["sign"], command=tool["command"])
-        btn.pack(side="right")
-        ToolTip(btn, tool["name"])
+    
+class Tools:
+    def __init__(self, parent, store):
+        self.tools = [
+            {
+                "name": "Add",
+                "sign": "\u002B",
+                "command": lambda: addPopup(store)
+            },
+            {
+                "name": "Delete",
+                "sign": "\u2715",
+                "command": None
+            },
+            {
+                "name": "Edit",
+                "sign": "\u270e",
+                "command": None
+            }
+        ]
+        self.frame = tk.Frame(parent)
+        self.load_tools()
+    def load_tools(self):
+        for tool in self.tools:
+            btn = tk.Button(self.frame, text=tool["sign"], command=tool["command"])
+            btn.pack(side="right")
+            ToolTip(btn, tool["name"])
+    def pack(self, **kwargs):
+        self.frame.pack(**kwargs)

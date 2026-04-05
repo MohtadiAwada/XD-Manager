@@ -21,16 +21,10 @@ class DB:
         placeholders = ", ".join(["?" for _ in data])
         self.cursor.execute(f"INSERT INTO disks ({cols}) VALUES ({placeholders})", tuple(data.values()))
         self.conn.commit()
-        self.print_table()
+    def fetch_all(self) -> list:
+        cols = ", ".join([col["title"].replace(" ", "_") for col in self.columns])
+        self.cursor.execute(f"SELECT {cols} FROM disks")
+        return self.cursor.fetchall()
     def exists(self, col: str, value: str) -> bool:
         self.cursor.execute(f"SELECT 1 FROM disks WHERE {col} = ?", (value,))
         return self.cursor.fetchone() is not None
-    def print_table(self):
-        self.cursor.execute("SELECT * FROM disks")
-        rows = self.cursor.fetchall()
-        self.cursor.execute("PRAGMA table_info(disks)")
-        headers = [row[1] for row in self.cursor.fetchall()]
-        print(" | ".join(headers))
-        print("-" * 50)
-        for row in rows:
-            print(" | ".join(str(v) for v in row))
