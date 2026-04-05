@@ -168,6 +168,7 @@ class App(ctk.CTk):
             th.pack(side="left")
         for i, rowObj in enumerate(data):
             construct_row(rowObj, i)
+        self.apply_theme(self.theme)
         return rows_widget
     def construct_form(self, input_Objs:list, form:ctk.CTkFrame):
         for element in form.winfo_children():
@@ -193,7 +194,7 @@ class App(ctk.CTk):
         buttons = ctk.CTkFrame(form)
         buttons.pack(fill="x", padx=[0, 12], pady=[0, 12])
         save_button = ctk.CTkButton(buttons, text="save", command=self.form_submit_handler)
-        clear_button = ctk.CTkButton(buttons, text="clear")
+        clear_button = ctk.CTkButton(buttons, text="clear", command=lambda i=inputs: self.clear_handler(i))
         for btn in [save_button, clear_button]:
             btn.pack(side="left", padx=[12, 0], fill="both", expand=True)
     def apply_theme(self, theme:dict):
@@ -215,14 +216,14 @@ class App(ctk.CTk):
                 color = theme["table"]["row-fg-color-2"] if i%2==0 else theme["table"]["row-fg-color-1"]
                 e.configure(fg_color=color)
                 for k, chld in enumerate(e.winfo_children()):
-                    if k == len(e.winfo_children())-1:
+                    #if k == len(e.winfo_children())-1:
                         #if self.DATA[i-1]["isEncrypted"]:
                         #    chld.configure(fg_color=theme["table"]["row-badge-fg-color-true"], text_color=theme["table"]["row-badge-text-color-true"])
                         #else:
                         #    chld.configure(fg_color=theme["table"]["row-badge-fg-color-false"], text_color=theme["table"]["row-badge-text-color-false"])
-                        pass
-                    else:
-                        chld.configure(text_color=theme["table"]["row-text-color"])
+                        #pass
+                    #else:
+                    chld.configure(text_color=theme["table"]["row-text-color"])
         self.form.configure(fg_color=theme["form"]["fg-color"])
         for section in self.form.winfo_children():
             section.configure(fg_color="transparent")
@@ -265,11 +266,6 @@ class App(ctk.CTk):
                 for button in part.winfo_children():
                     button.configure(fg_color=theme["config-panel"]["button-fg-color"], hover_color=theme["config-panel"]["button-hover-color"], text_color=theme["config-panel"]["button-text-color"])
     #event handle
-    def change_handler(self):
-        if self.form_inpt_isencrptd.get():
-            self.form_inpt_pswrdprtcl.pack(side="left", padx=[0, 10], pady=10)
-        else:
-            self.form_inpt_pswrdprtcl.pack_forget()
     def refresh_handler(self):
         self.render_data()
         self.apply_theme(self.theme)
@@ -298,16 +294,14 @@ class App(ctk.CTk):
             data_dict[self.CONFIG["Data Entry"][index]["Title"]] = input.get()
         self.DATA.append(data_dict)
         self.save_data()
-    def clear_handler(self):
-        for input in [self.form_inpt_id, self.form_inpt_ttl, self.form_inpt_dscrptn]:
-            input.delete(0, "end")
-        self.form_inpt_id.configure(placeholder_text="ID")
-        self.form_inpt_ttl.configure(placeholder_text="Title")
-        self.form_inpt_dscrptn.configure(placeholder_text="Description")
-        self.form_inpt_type.set("Type")
-        self.form_inpt_isencrptd.deselect()
-        self.change_handler()
-        self.form_inpt_pswrdprtcl.set("Password Protocol")
+        self.clear_handler(inputs)
+    def clear_handler(self, inputs):
+        for i, d in zip(inputs.winfo_children(), self.CONFIG["Data Entry"]):
+            if isinstance(i, ctk.CTkEntry):
+                i.delete(0, "end")
+                i.configure(placeholder_text=d["Title"])
+            elif isinstance(i, ctk.CTkComboBox):
+                i.set(d["Title"])
     def select_handler(self, index):
         if self.SELECTED is not None:
             color = self.theme["table"]["row-fg-color-1"] if self.SELECTED%2==0 else self.theme["table"]["row-fg-color-2"]
