@@ -10,14 +10,19 @@ class MainWindow:
         self.root = root
         self.root.title("DiskLog")
         
-        self.search = tk.Frame(self.root)
-        self.search.pack(side="top")
-        tk.Label(self.search, text="Search:").pack(side="left")
+        tk.Frame(self.root, height=1, bg="#CCCCCC").pack(side="top", fill="x", padx=12, pady=[12, 0])
+
+        self.head = tk.Frame(self.root)
+        self.head.pack(side="top", fill="x", padx=14, pady=6)
+        self.search = tk.Frame(self.head)
+        self.search.pack(side="left")
+        tk.Label(self.search, text="Search:").pack(side="left", padx=[0, 6])
         self.search_bar = tk.Entry(self.search)
         self.search_bar.pack(side="left")
+        self.tools = Tools(self.head, store)
+        self.tools.pack(side="right")
         
-        self.table = Table(self.root, store)
-        self.table.pack(side="top", fill="both", expand=True)
+        tk.Frame(self.root, height=1, bg="#CCCCCC").pack(side="top", fill="x", padx=12)
 
-        self.tools = Tools(self.root, store)
-        self.tools.pack(side="top", fill="x")
+        self.table = Table(self.root, store)
+        self.table.pack(side="top", fill="both", expand=True, padx=[14, 0], pady=[6, 24])

@@ -11,7 +11,7 @@ class ToolTip:
         widget.bind("<Leave>", self.hide)
 
     def show(self, event):
-        x = self.widget.winfo_rootx() + 20
+        x = self.widget.winfo_rootx() - 20
         y = self.widget.winfo_rooty() + 20
         self.tooltip = tk.Toplevel(self.widget)
         self.tooltip.wm_overrideredirect(True)
@@ -48,7 +48,7 @@ class Tools:
     def load_tools(self):
         for tool in self.tools:
             btn = tk.Button(self.frame, text=tool["sign"], command=tool["command"])
-            btn.pack(side="right")
+            btn.pack(side="right", padx=[6, 0])
             ToolTip(btn, tool["name"])
     def delete_handler(self):
         if not self.store.selected:

@@ -10,11 +10,11 @@ class Table:
         self.tree = ttk.Treeview(self.frame, columns=cols+["_id"], show="headings", selectmode="extended")
         for col in self.store.config.get("columns"):
             self.tree.heading(col["title"], text=col["title"])
-            self.tree.column(col["title"], width=col.get("width", 100))
+            self.tree.column(col["title"], width=col.get("width", 100), anchor="center")
         self.tree.column("_id", width=0, stretch=False)
         self.tree.heading("_id", text="")
 
-        self.scrollbar = ttk.Scrollbar(self.frame, orient="vertical", command=self.tree.yview)
+        self.scrollbar = tk.Scrollbar(self.frame, orient="vertical", command=self.tree.yview, width=14)
         self.tree.configure(yscrollcommand=self.scrollbar.set)
 
         self.tree.pack(side="left", fill="both", expand=True)

@@ -13,6 +13,13 @@ class addPopup:
         self.store = store
         self.popup = tk.Toplevel()
         self.popup.title("Add Disk")
+        self.popup.update_idletasks()
+
+        root = self.popup.master
+        x = root.winfo_rootx() + root.winfo_width()//2 - self.popup.winfo_width()//2
+        y = root.winfo_rooty() + root.winfo_height()//2 - self.popup.winfo_height()//2
+        self.popup.geometry(f"+{x}+{y}")
+
         self.popup.grab_set()
         self.popup.focus_set()
 
