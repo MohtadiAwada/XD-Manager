@@ -2,14 +2,6 @@ import sqlite3
 
 class DB:
     def __init__(self, file_path, columns):
-        if not any(col.get("unique") for col in columns):
-            import tkinter as tk
-            from tkinter import messagebox
-            root = tk.Tk()
-            root.withdraw()  # hide the empty window
-            messagebox.showerror("Config Error", "At least one column must be unique")
-            root.destroy()
-            raise SystemExit
         self.conn = sqlite3.connect(file_path)
         self.cursor = self.conn.cursor()
         self.columns = columns
@@ -29,10 +21,19 @@ class DB:
         placeholders = ", ".join(["?" for _ in data])
         self.cursor.execute(f"INSERT INTO disks ({cols}) VALUES ({placeholders})", tuple(data.values()))
         self.conn.commit()
+    def update(self, data, id_builtin):
+        keys = [x.replace(" ", "_") for x in data.keys()]
+        keys = [x + " = ?" for x in keys]
+        cols = ", ".join(keys)
+        self.cursor.execute(f"UPDATE disks SET {cols} WHERE id_builtin = {id_builtin}", tuple(data.values()))
     def fetch_all(self) -> list:
         cols = ", ".join([col["title"].replace(" ", "_") for col in self.columns])
         self.cursor.execute(f"SELECT {cols}, id_builtin FROM disks")
         return self.cursor.fetchall()
+    def fetch_one(self, id_builtin):
+        cols = ", ".join([col["title"].replace(" ", "_") for col in self.columns])
+        self.cursor.execute(f"SELECT {cols} FROM disks WHERE id_builtin = ?", (id_builtin,))
+        return self.cursor.fetchone()
     def delete(self, id_val) -> None:
         self.cursor.execute("DELETE FROM disks WHERE id_builtin = ?", (id_val,))
         self.conn.commit()

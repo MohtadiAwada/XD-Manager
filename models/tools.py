@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from windows.add_popup import addPopup
+from windows.edit_popup import editPopup
 
 class ToolTip:
     def __init__(self, widget, text):
@@ -40,7 +41,7 @@ class Tools:
             {
                 "name": "Edit",
                 "sign": "\u270e",
-                "command": None
+                "command": lambda: editPopup(self.store)
             }
         ]
         self.frame = tk.Frame(parent)

@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk ,messagebox
 import re
 
 def make_checkbox(parent, col):
@@ -11,11 +11,19 @@ field_types = {
     "checkbox": make_checkbox
 }
 
-class addPopup:
+class editPopup:
     def __init__(self, store):
         self.store = store
+        self.selected = self.store.selected
+        self.row = self.store.db.fetch_one(self.selected[0])
+        if not self.store.selected:
+            messagebox.showwarning("Warning", "No rows selected")
+            return
+        elif len(self.store.selected) > 1:
+            messagebox.showwarning("Warning", "Select only one row to edit")
+            return
         self.popup = tk.Toplevel()
-        self.popup.title("Add Disk")
+        self.popup.title("Edit Disk")
         self.popup.update_idletasks()
 
         root = self.popup.master
@@ -29,9 +37,10 @@ class addPopup:
         self.popup.focus_set()
 
         self.field_widgets = []
-        self.biuld_from()
+        self.build_form()
+        self.fill_form()
 
-    def biuld_from(self):
+    def build_form(self):
         for col in self.store.config.get("columns"):
             frame = tk.Frame(self.popup)
             frame.pack(side="top", fill='x', pady=[6, 0], padx=[0, 12])
@@ -46,6 +55,14 @@ class addPopup:
         frame.pack(side="top", fill="x", pady=12, padx=12)
         tk.Button(frame, text="save", command=self.handle_save).pack(side="right")
         tk.Button(frame, text="cancel", command=self.popup.destroy).pack(side="left")
+    def fill_form(self):
+        for data, field in zip(self.row, self.field_widgets):
+            if isinstance(field, ttk.Combobox):
+                field.set(data)
+            elif isinstance(field, tk.Entry):
+                field.insert(0, data)
+            elif isinstance(field, tk.Checkbutton):
+                field.setvar(field["variable"], data)
     def handle_save(self):
         data = {}
         for widget, col in zip(self.field_widgets, self.store.config.get("columns")):
@@ -58,16 +75,16 @@ class addPopup:
         if error:
             messagebox.showerror("Error", error)
             return
-        self.store.db.insert(data)
+        self.store.db.update(data, self.selected[0])
         self.store.table.refresh()
         self.popup.destroy()
     def validate(self, data: dict) -> str | None:
-        for col in self.store.config.get("columns"):
+        for i, col in enumerate(self.store.config.get("columns")):
             value = data.get(col["title"], "")
             if col.get("required") and not value:
                 return f"{col['title']} is required"
             if col.get("pattern") and not re.match(col["pattern"], str(value)):
                 return f"{col['title']} has wrong format"
-            if col.get("unique") and self.store.db.exists(col["title"], value):
+            if col.get("unique") and self.store.db.exists(col["title"], value) and value != self.row[i]:
                 return f"{col['title']} already exists"
         return None
