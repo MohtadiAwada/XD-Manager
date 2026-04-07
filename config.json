@@ -23,7 +23,12 @@
         {
             "title": "Type",
             "type": "select",
-            "values": ["HDD", "SSD", "Flash Drive", "Memory Card"],
+            "values": [
+                "HDD",
+                "SSD",
+                "Flash Drive",
+                "Memory Card"
+            ],
             "db_type": "TEXT",
             "required": true
         },
