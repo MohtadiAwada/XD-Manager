@@ -50,8 +50,8 @@ class Export:
         type_frame = tk.Frame(input_frame)
         type_frame.pack(side="top", fill="x", padx=14, pady=[0, 6])
         tk.Label(type_frame, text="Export to:").pack(side="left", padx=[0, 6])
-        self.file_type = ttk.Combobox(type_frame, values=["Table Sheet", "Database File"], state="readonly")
-        self.file_type.set("Table Sheet")
+        self.file_type = ttk.Combobox(type_frame, values=["Spreadsheet", "Database File"], state="readonly")
+        self.file_type.set("Spreadsheet")
         self.file_type.bind("<<ComboboxSelected>>", self.change_input)
         self.file_type.pack(side="left")
         self.db_data_frame = tk.Frame(input_frame)
@@ -100,7 +100,7 @@ class Export:
             for key, value in zip(fieldnames, self.store.table.tree.item(item)['values']):
                 row[key] = value
             data.append(row)
-        if self.file_type.get() == "Table Sheet":
+        if self.file_type.get() == "Spreadsheet":
             self.export_csv(fieldnames, data)
         else:
             self.export_db(data)
