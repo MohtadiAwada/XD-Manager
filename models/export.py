@@ -70,7 +70,9 @@ class Export:
         tk.Button(self.popup, text="Cancel", command=self.popup.destroy).pack(side="top", fill="x", expand=True, padx=14, pady=[6, 12])
 
     def select_dir(self):
-        file_dir = filedialog.askdirectory(title="Export", initialdir=Path.cwd())
+        self.popup.withdraw()
+        file_dir = filedialog.askdirectory(parent=self.popup, title="Export", initialdir=Path.cwd())
+        self.popup.deiconify()
         self.file_location.delete(0, "end")
         self.file_location.insert(0, file_dir)
     
