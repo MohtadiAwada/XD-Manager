@@ -1,93 +1,131 @@
-
 # DiskLog
 
-**Stop guessing what's on your external drives.** DiskLog is a lightweight, fully customizable desktop application designed to track and manage collections of external disks, flash drives, and memory cards. Built entirely with Python's standard library, it offers a snappy, zero-dependency solution to digital hoarding.
+Stop guessing what's on your external drives. DiskLog is a lightweight desktop app for tracking and managing collections of external disks, flash drives, and memory cards. Built entirely on Python's standard library — no pip install, no setup, just run it.
 
-What makes DiskLog special? **It is 100% config-driven.** You define your database schema and UI forms in a simple JSON file, and DiskLog automatically handles the rest, from rendering input fields to dynamically altering your SQLite database.
+What makes DiskLog different is that it is **100% config-driven**. You define your database schema and form fields in a single JSON file, and the app builds itself around it — from the UI form inputs to the SQLite table structure.
 
------
-![app preview screenshot](assets/app_screenshot.png)
------
-## ✨ Features
+---
 
-  * **🛠 Dynamic, Config-Driven UI:** Add, remove, or modify columns via a simple `config.json`. The app instantly generates the appropriate UI elements and updates the database schema automatically.
-  * **📤 Flexible Data Export:** (New in v2.1.0) Export your filtered data to CSV for spreadsheets or to a brand-new SQLite database file for external use.
-  * **🔍 Advanced Query Search:** Use powerful database operators directly in the search bar (e.g., `Type = SSD`, `is encrypted = 1`).
-  * **✏️ In-App Schema Editor:** Tweak your configuration directly inside the app with built-in validation.
-  * **⚡ Zero Dependencies:** Built strictly with Python's standard library. No `pip install` required.
+![app screenshot](assets/app_screenshot.png)
 
------
+---
 
-## 🚀 Getting Started
+## Features
 
-### 📦 Portable Version (Windows)
-Download the latest `.exe` from the **Releases** page for a self-contained, no-installation experience.
+**Config-driven UI and database** — Add, remove, or rename columns in `config.json` and the app adapts automatically. The form, table, and database schema all update to match without touching any code.
 
-### 🐍 Running from Source
-**Requirements:** Python 3.10+ on Windows, macOS, or Linux.
+**Advanced search syntax** — The search bar parses real database operators. You can search globally across all columns, or use targeted queries like `Type = SSD`, `Type != HDD`, or combine filters with commas: `Type = Flash Drive, Sandisk`.
 
-1. Clone and enter the repository:
-   ```bash
-   git clone https://github.com/MohtadiAwada/DiskLog.git
-   cd DiskLog
-   ```
+**Export engine** — Export exactly what is visible in the table (based on your current search or filter) to two formats:
 
-2. Run the application:
-    ```bash
-    python app.py
-    ```
+- **Spreadsheet (.csv)** — compatible with Excel, Google Sheets, and Numbers
 
------
+- **Database file (.db)** — generates a new portable SQLite database with a custom table name and primary key column
 
-## 📖 Special Features & Proper Usage
+**Automatic schema evolution** — When you add a new column to your config, DiskLog runs `ALTER TABLE` automatically to update your existing database. No data is lost.
 
-### 1\. The Export Engine (v2.1.0)
+**In-app config editor** — Edit your `config.json` directly inside the app with a built-in JSON editor. Includes validation, a reset-to-default option, and a safety confirmation before applying changes.
 
-DiskLog now features a "What You See Is What You Get" export system. Only the data currently visible in your table (based on your search/filters) will be exported.
+**Input validation** — Per-column rules defined in config: required fields, regex pattern matching, and uniqueness checks. Errors are shown before anything hits the database.
 
-  * **Spreadsheet (.csv):** Generates a clean CSV file compatible with Excel, Google Sheets, and Numbers.
-  * **Database File (.db):** Generates a new SQLite database. You can customize the **Table Name** and **Primary Key** during the export process, making it perfect for migrating specific datasets to other projects.
+**Multi-row delete** — Select one or more rows in the table and delete them in a single action.
 
-### 2\. Advanced Search Syntax
+---
 
-The search bar parses input to execute complex queries:
+## Getting Started
 
-  * **Global Search:** Type any word to search across all columns.
-  * **Targeted Operators:** Use `=`, `!=`, `>`, `<`, `>=`, `<=`, or `LIKE`.
-      * *Example:* `Type != HDD`
-  * **Multiple Queries:** Combine filters with a comma.
-      * *Example:* `Type = Flash Drive, Sandisk`
+Requires Python 3.10+ on Windows, macOS, or Linux.
 
-### 3\. Automatic Schema Evolution
+```bash
+git clone https://github.com/MohtadiAwada/DiskLog.git
+cd DiskLog
+python app.py
+```
 
-When you add a new column to the `columns` list in your config, DiskLog's engine automatically executes an `ALTER TABLE` command to update your SQLite database.
+---
 
------
+## Search Syntax
 
-## 🏗️ Project Architecture
+| Query | Behavior |
+| --- | --- |
+| `backup` | Global search across all columns |
+| `Type = SSD` | Exact match on a specific column |
+| `Type != HDD` | Not equal |
+| `Type LIKE Flash%` | Pattern match |
+| `Type = Flash Drive, Sandisk` | Multiple filters combined with AND |
+
+Supported operators: `=`, `!=`, `<`, `>`, `<=`, `>=`, `LIKE`
+
+---
+
+## Configuration
+
+Everything is defined in `config.json`. A column entry looks like this:
+
+```json
+{
+    "title": "ID",
+    "type": "entry",
+    "db_type": "TEXT",
+    "pattern": "^\\d{4}$",
+    "required": true,
+    "unique": true
+}
+```
+
+**Column options:**
+
+| Key | Description |
+| --- | --- |
+| `title` | Display name and database column name |
+| `type` | Input widget: `entry`, `select`, or `checkbox` |
+| `db_type` | SQLite type: `TEXT`, `INTEGER`, `REAL`, etc. |
+| `required` | Field cannot be empty on submit |
+| `unique` | Value must not already exist in the database |
+| `pattern` | Regex pattern for format validation |
+| `values` | List of options, required for `select` type |
+
+---
+
+## Project Structure
 
 ```text
 DiskLog/
-├── app.py                 # Entry point (Initializes Tkinter mainloop)
-├── config.json            # Auto-generated schema configuration
-├── data.db                # Auto-generated SQLite database
-├── core/                  # Backend Logic
+├── app.py                 # Entry point
+├── config.json            # Schema configuration
+├── data.db                # SQLite database (auto-created)
+├── core/
 │   ├── config.py          # Config loader and validator
-│   ├── db.py              # Dynamic SQLite engine and query parser
-│   └── store.py           # State management
-├── models/                # Reusable UI Components
-│   ├── table.py           # Dynamic data grid
+│   ├── db.py              # SQLite engine and query parser
+│   └── store.py           # Shared state
+├── models/
+│   ├── table.py           # Data table component
 │   ├── tools.py           # Toolbar buttons
-│   └── export.py          # CSV and SQLite export engine (v2.1.0)
-└── windows/               # Application Windows
-    ├── main.py            # Main GUI layout
-    ├── add_popup.py       # Dynamic creation form
-    ├── edit_popup.py      # Dynamic edit form
-    └── config_popup.py    # Raw JSON editor with safety validations
+│   └── export.py          # CSV and SQLite export engine
+└── windows/
+    ├── main.py            # Main window layout
+    ├── add_popup.py       # Add entry form
+    ├── edit_popup.py      # Edit entry form
+    └── config_popup.py    # In-app JSON config editor
 ```
 
------
+---
 
-## 📄 License
+## Migrating from v1 (XD-Manager)
 
-MIT License - see the [LICENSE](./LICENSE) file for details.
+v2 is a full rewrite and is not backwards compatible with v1's `data.json`. Your v1 data will not be automatically imported. The v1 release is still available on the `main` branch and in the [v1.2.0 release](../../releases).
+
+---
+
+## Tech Stack
+
+- Python 3.10+
+- Tkinter + ttk
+- SQLite3
+- JSON
+
+---
+
+## License
+
+MIT — see [LICENSE](./LICENSE) for details.
